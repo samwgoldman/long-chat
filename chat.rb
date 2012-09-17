@@ -1,6 +1,7 @@
 require "rack/request"
 require "rack/response"
 require "json"
+require "thread"
 
 class Chat
   def initialize(room, timeout = 25)
@@ -8,13 +9,16 @@ class Chat
     @timeout = timeout
     @mailbox = []
     @room.join(method(:receive))
+    @mutex = Mutex.new
   end
 
   def receive(username, text)
-    @mailbox.unshift({
-      :username => username,
-      :text => text
-    })
+    @mutex.synchronize do
+      @mailbox.unshift({
+        :username => username,
+        :text => text
+      })
+    end
   end
 
   def call(env)
@@ -55,8 +59,10 @@ class Chat
     response = Rack::Response.new
     response["Content-Type"] = "application/json"
     response["Cache-Control"] = "no-cache"
-    response.write @mailbox.to_json
-    @mailbox.clear
+    @mutex.synchronize do
+      response.write @mailbox.to_json
+      @mailbox.clear
+    end
     response.finish
   end
 end
