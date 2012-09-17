@@ -1,0 +1,13 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    puma (1.6.3-java)
+      rack (~> 1.2)
+    rack (1.4.1)
+
+PLATFORMS
+  java
+
+DEPENDENCIES
+  puma
+  rack

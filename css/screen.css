@@ -1,0 +1,32 @@
+body {
+  font-size: 16px;
+  font-family: Helvetica, Arial, sans-serif;
+  background-color: #efefef;
+}
+
+form label {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: bold;
+  color: #999;
+  text-transform: uppercase;
+}
+
+form label input {
+  display: block;
+}
+
+form input[type="submit"] {
+  display: inline-block;
+}
+
+#chat {
+  width: 40em;
+}
+
+#chat .username {
+  padding-right: 8px;
+  color: #666;
+}
+#chat .username:before { content: "<" }
+#chat .username:after  { content: ">" }
