@@ -1,18 +1,27 @@
 require "rack/request"
 require "rack/response"
+require "json"
 
 class Chat
-  def initialize(log, timeout = 25)
-    @log = log
+  def initialize(room, timeout = 25)
+    @room = room
     @timeout = timeout
+    @mailbox = []
+    @room.join(method(:receive))
+  end
+
+  def receive(username, text)
+    @mailbox.unshift({
+      :username => username,
+      :text => text
+    })
   end
 
   def call(env)
     request = Rack::Request.new(env)
     case request.request_method
     when "GET"
-      etag = env["HTTP_IF_NONE_MATCH"] rescue nil
-      messages(etag)
+      messages
     when "POST"
       say(request.params)
     else
@@ -20,39 +29,34 @@ class Chat
     end
   end
 
-  def messages(etag)
-    log = []
+  def messages
     time = Time.now
 
-    while log.empty?
-      log = @log.since(etag)
+    while @mailbox.empty?
+      sleep 0.1
       break if Time.now - time > @timeout
     end
 
-    if etag && log.empty?
-      [304, { "Cache-Control" => "no-cache" }, []]
-    else
-      ok(log)
-    end
+    ok
   end
 
   def say(params)
     begin
       username = params.fetch("username")
       message = params.fetch("message")
-      @log.say(username, message)
+      @room.say(username, message)
       [201, { "Content-Type" => "text/plain" }, ["Created"]]
     rescue KeyError
       [422, { "Content-Type" => "text/plain" }, ["Unprocessable Entity"]]
     end
   end
 
-  def ok(log)
+  def ok
     response = Rack::Response.new
     response["Content-Type"] = "application/json"
     response["Cache-Control"] = "no-cache"
-    response["ETag"] = log.etag
-    response.write log.to_json
+    response.write @mailbox.to_json
+    @mailbox.clear
     response.finish
   end
 end
